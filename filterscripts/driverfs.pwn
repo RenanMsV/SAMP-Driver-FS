@@ -5,7 +5,7 @@
 
 Smooth NPC Drivers - Have some Singleplayer-like NPCs on your server! - by NaS & AIped (c) 2013-2016
 
-Version: 1.2.1
+Version: 1.2.4-R1
 
 This is the FS-version of our NPC Drivers Script.
 To find bugs and improve its features we decided to release this compact version for testing and experimenting purposes.
@@ -28,6 +28,11 @@ Feel free to use and modify as you wish, but don't re-release this without our p
 // -----------------------------------------------------------------------------
 
 Latest Changenotes:
+
+[v1.2.4-R1]
+
+- Support for FCNPC Version (1.7.6) - Fixed functions heading 
+- Fix includes to match latest includes releases. GPS.inc > RouteConnector.inc, rotations.inc > rotation.inc
 
 [v1.2.4]
 
@@ -94,9 +99,9 @@ TO DO:
 #undef MAX_PLAYERS
 #define MAX_PLAYERS				(1000) // Redefine to your MAX_PLAYERS value to save some memory.
 #include <FCNPC>
-#include <GPS>
+#include <RouteConnector>
 #include <ColAndreas>
-#include <rotations>
+#include <rotation>
 #include <zcmd>
 
 // ----------------------------------------------------------------------------- CONFIG
@@ -845,7 +850,7 @@ public FCNPC_OnStreamIn(npcid, forplayerid)
 
 // ----------------------------------------------------------------------------- 
 
-public FCNPC_OnDeath(npcid, killerid, reason)
+public FCNPC_OnDeath(npcid, killerid, weaponid)
 {
     if(!Initialized) return 1;
     
@@ -875,7 +880,7 @@ public FCNPC_OnDeath(npcid, killerid, reason)
 		new str[100], name[MAX_PLAYER_NAME+1], weap[25], killdesc[10];
 		GetPlayerName(npcid, str, sizeof(str));
 		GetPlayerName(killerid, name, sizeof(name));
-		GetWeaponName(reason, weap, sizeof(weap));
+		GetWeaponName(weaponid, weap, sizeof(weap));
 
 		switch(random(16))
 		{
@@ -1662,13 +1667,13 @@ public FCNPC_OnReachDestination(npcid)
 		{
 		    if(Drivers[driverid][nLT] - Drivers[driverid][nCopStuffTick] > 9000 && Drivers[driverid][nOnDuty])
 			{
-				FCNPC_UseVehicleSiren(npcid, false);
+				FCNPC_SetVehicleSiren(npcid, false);
 				Drivers[driverid][nOnDuty] = false;
 			}
 		    else if(Drivers[driverid][nLT] - Drivers[driverid][nCopStuffTick] > 90000 && !Drivers[driverid][nOnDuty])
 		    {
 		        Drivers[driverid][nCopStuffTick] = Drivers[driverid][nLT];
-		        FCNPC_UseVehicleSiren(npcid, true);
+		        FCNPC_SetVehicleSiren(npcid, true);
 		        Drivers[driverid][nOnDuty] = true;
 		    }
 		}
@@ -1735,7 +1740,7 @@ public FCNPC_OnReachDestination(npcid)
 		GangZoneShowForAll(Drivers[driverid][nGangZone], 0x66FF00FF);
 		#endif
 
-		if(!FCNPC_IsStreamedInForAnyone(npcid))
+		if(!FCNPC_IsStreamedForAnyone(npcid))
 		{
 		    if(Drivers[driverid][nCurNode] < DriverPathLen[driverid]-10)
 		    {
@@ -1743,7 +1748,7 @@ public FCNPC_OnReachDestination(npcid)
 		        cnode += 3;
 		    }
 
-		    FCNPC_GoTo(npcid, DriverPath[driverid][cnode][0], DriverPath[driverid][cnode][1], DriverPath[driverid][cnode][2], FCNPC_MOVE_TYPE_DRIVE, MAX_SPEED*0.8, .pathfinding = FCNPC_MOVE_PATHFINDING_NONE, .radius = 0.0, .set_angle = true, .min_distance = 0.0, .stopdelay = 0);
+		    FCNPC_GoTo(npcid, DriverPath[driverid][cnode][0], DriverPath[driverid][cnode][1], DriverPath[driverid][cnode][2], FCNPC_MOVE_TYPE_DRIVE, MAX_SPEED*0.8, .UseMapAndreas = true, .radius = 0.0, .setangle = true, .dist_offset = 0.0, .stopdelay = 0);
 		    Drivers[driverid][nSpeed] = MAX_SPEED*0.7;
 		    Drivers[driverid][nActive] = false;
             
@@ -1887,7 +1892,7 @@ public FCNPC_OnReachDestination(npcid)
 		    else GetRotForSurface(Qw, Qx, Qy, Qz,  0.0, 0.0,  0.0, 0.0, FCNPC_GetAngle(npcid));
 		}
 
-		FCNPC_GoTo(npcid, DriverPath[driverid][cnode][0], DriverPath[driverid][cnode][1], DriverPath[driverid][cnode][2], FCNPC_MOVE_TYPE_DRIVE, Drivers[driverid][nSpeed], .pathfinding = FCNPC_MOVE_PATHFINDING_NONE, .radius = 0.0, .set_angle = true, .min_distance = 0.0, .stopdelay = 0);
+		FCNPC_GoTo(npcid, DriverPath[driverid][cnode][0], DriverPath[driverid][cnode][1], DriverPath[driverid][cnode][2], FCNPC_MOVE_TYPE_DRIVE, Drivers[driverid][nSpeed], .UseMapAndreas = true, .radius = 0.0, .setangle = true, .dist_offset = 0.0, .stopdelay = 0);
         FCNPC_SetQuaternion(npcid, Qw, Qx, Qy, Qz);
 
 	    #if DEBUG_BUBBLE == true
@@ -2041,7 +2046,7 @@ public OnPlayerWeaponShot(playerid, weaponid, hittype, hitid, Float:fX, Float:fY
 	return 1;
 }
 
-public FCNPC_OnTakeDamage(npcid, issuerid, Float:amount, weaponid, bodypart) // Fixes NPC Body Damage
+public FCNPC_OnTakeDamage(npcid, damagerid, weaponid, bodypart, Float:health_loss) // Fixes NPC Body Damage
 {
 	return 1;
 }
